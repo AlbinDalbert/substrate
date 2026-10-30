@@ -1,0 +1,12 @@
+timezone = "{timezone}"
+
+# A feature is on when its section is here. Delete a section to turn it off.
+
+[inbox]
+dir = "inbox"
+filename = "%Y-%m-%dT%H%M%S.md"
+
+[scratch]
+dir = "scratch"
+filename = "%Y-%m-%d.md"
+# template = "templates/scratch.md"

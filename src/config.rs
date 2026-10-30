@@ -2,17 +2,22 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::path::Path;
 
-/// `.substrate/config.toml`. Every field is optional; a folder without one works on defaults.
-#[derive(Deserialize, Default)]
-#[serde(default)]
+/// Relative to a substrate's folder.
+pub const CONFIG: &str = ".substrate/config.toml";
+
+/// `.substrate/config.toml`. Its existence is what makes a folder a substrate.
+/// A feature is on when its section is present.
+#[derive(Deserialize)]
 pub struct Config {
-    pub daily: Daily,
-    pub inbox: Inbox,
+    /// IANA name, e.g. "Europe/Stockholm". Missing: the machine's local time.
+    pub timezone: Option<String>,
+    pub scratch: Option<Scratch>,
+    pub inbox: Option<Inbox>,
 }
 
 #[derive(Deserialize)]
 #[serde(default)]
-pub struct Daily {
+pub struct Scratch {
     pub dir: String,
     /// chrono strftime pattern
     pub filename: String,
@@ -28,10 +33,10 @@ pub struct Inbox {
     pub filename: String,
 }
 
-impl Default for Daily {
+impl Default for Scratch {
     fn default() -> Self {
         Self {
-            dir: "daily".into(),
+            dir: "scratch".into(),
             filename: "%Y-%m-%d.md".into(),
             template: None,
         }
@@ -47,13 +52,21 @@ impl Default for Inbox {
     }
 }
 
+/// Everything on, like a fresh `init`.
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            timezone: None,
+            scratch: Some(Scratch::default()),
+            inbox: Some(Inbox::default()),
+        }
+    }
+}
+
 impl Config {
     pub fn load(root: &Path) -> Result<Self> {
-        let path = root.join(".substrate/config.toml");
-        if !path.exists() {
-            return Ok(Self::default());
-        }
-        let text = std::fs::read_to_string(&path)?;
+        let path = root.join(CONFIG);
+        let text = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
         toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))
     }
 }
